@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
+using TMPro;
 
 public class MainManager : MonoBehaviour
 {
@@ -10,15 +12,20 @@ public class MainManager : MonoBehaviour
     public int LineCount = 6;
     public Rigidbody Ball;
 
+    public Text hiScoreText;
     public Text ScoreText;
     public GameObject GameOverText;
+    public GameObject gameOverNewHiScoreText;
     
     private bool m_Started = false;
     private int m_Points;
     
     private bool m_GameOver = false;
 
-    
+    public string playerName = MenuManager.Instance.playerName;
+    public string currentHiScoreName;
+    public int currentHiScore;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -36,6 +43,8 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+        LoadHiScore();
+        Debug.Log(hiScoreText.text);
     }
 
     private void Update()
@@ -71,6 +80,47 @@ public class MainManager : MonoBehaviour
     public void GameOver()
     {
         m_GameOver = true;
-        GameOverText.SetActive(true);
+     
+        if (m_Points > currentHiScore)
+        {
+            gameOverNewHiScoreText.SetActive(true);
+            SaveHiScore();
+        }
+        else 
+        {
+            GameOverText.SetActive(true);
+        }
+    }
+    [System.Serializable]
+    class SaveData
+    {
+        public string playerName;
+        public int playerScore;
+    }
+
+    public void SaveHiScore()
+    {
+        SaveData data = new SaveData();
+        data.playerName = playerName;
+        data.playerScore = m_Points;
+
+        string json = JsonUtility.ToJson(data);
+
+        File.WriteAllText(Application.persistentDataPath + "savefile.json", json);
+    }
+
+    public void LoadHiScore()
+    {
+        string path = Application.persistentDataPath + "savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
+
+            currentHiScoreName = data.playerName;
+            currentHiScore = data.playerScore;
+
+            hiScoreText.text = "Best score: " + currentHiScoreName + " : " + currentHiScore;
+        }
     }
 }
